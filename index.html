@@ -2,12 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AbstractContentEditor</title>
-    <script type="application/javascript"> 
-        /** 
-            dont delete! used for initialization.
-        **/
-
+    <title>PoolSelectionEditor</title>
+    <script type="application/javascript">
         function init() {
             window.data = getData();
             setDataGetter(dataGetter)
@@ -15,62 +11,100 @@
     </script>
 </head>
 <body>
-
-    <!-- EDIT Form for User Input -->
-    <div>
-        <label for="titleInput">Enter Title:</label>
-        <input id="titleInput" type="text" />
+    <div id="content">
+        <p>
+            <label for="titleInput">Enter Title:</label>
+            <input id="titleInput" type="text" />
+        </p>
+        <p>
+            <label for="questionInput">Enter question:</label>
+            <input id="questionInput" type="text"/>
+        </p>
+        <p>
+          Add items to the selection pool. Tick the checkbox if the item is a correct answer.
+        </p>
+        <p>
+            <button id="addMore">Add item</button>
+        </p>
+        <p style="visibility: collapse">
+            <label for="hintInput">Enter hint:</label>
+            <textarea id="hintInput"></textarea>
+        </p>
+        <p style="visibility: collapse">
+            <label for="explanationInput">Enter explanation:</label>
+            <textarea id="explanationInput"></textarea>
+         </p>
     </div>
-    <!-- EDIT Form for User Input -->
-
-    <!-- EDIT Form logic -->
     <script type="application/javascript">
-        /** 
-            dataGetter (as referenced in function init() ) returns data object with values from form.
-
-            Sharing cards e.g. on facebook uses following 3 properties for displaying the preview:
-            title
-            description
-            imageUrl
-
-            for example:
-            title: document.getElementById('titleInput').value,
-            type: 'FillIN',
-            fillintext: document.getElementById('fillintext').value,
-            questionContext: document.getElementById('hintInput').value,
-            answerContext: document.getElementById('explanationInput').value,
-            lastEdit: Date.now(),
-            answers: extractAnswersToArray(document.getElementById('fillintext').value),
-            releaseStatus: 'PUBLIC',
-            multimedia: [],
-            description: replacePossibleAnswers(document.getElementById('fillintext').value)
-        **/
+        var numAnswers = 0;
+        var addMoreButton = document.getElementById("addMore");
+    
+        addMoreButton.onclick = function() {
+            if (countAnswers() > 20) addMoreButton.style.visibility = "hidden";
+            addMoreButton.parentNode.insertBefore(createAnswer(), addMoreButton);
+        };
+        function countAnswers () {
+            return numAnswers;
+        }
+        function createAnswer () {
+            var newAnswer = document.createElement("p");
+            var label = document.createElement("label");
+            var input = document.createElement("input");
+            var checkbox = document.createElement("input");
+            checkbox.setAttribute("id", "correct" + (countAnswers() + 1));
+            checkbox.setAttribute("type", "checkbox");
+            label.setAttribute("for","answer" + (countAnswers() + 1));
+            label.innerHTML = countAnswers() + 1 + ": ";
+            input.setAttribute("id","answer" + (countAnswers() + 1));
+            input.setAttribute("type","text");
+            newAnswer.appendChild(label);
+            newAnswer.appendChild(input);
+            newAnswer.appendChild(checkbox);
+            numAnswers += 1;
+            return newAnswer;
+        }
         function dataGetter() {
+            var lastEdit = Date.now();
+            var items = [];
+            for (var i = 1; i <= countAnswers(); i++) {
+                var value = document.getElementById('answer' + i).value;
+                if (value !== undefined && value.length !== undefined && value.length > 0) {
+                    items.push({
+                        text: value,
+                        isCorrect: document.getElementById('correct'+i).checked,
+                        lastEdit: lastEdit,
+                        id: i
+                    });
+                }
+            }
             return {
                 // return data object
-                lastEdit: Date.now(),
-                title: document.getElementById('titleInput').value
+                title: document.getElementById('titleInput').value,
+                question: document.getElementById('questionInput').value,
+                items: items,
+                questionContext: document.getElementById('hintInput').value,
+                answerContext: document.getElementById('explanationInput').value,
+                lastEdit: lastEdit,
+                // preview metadata
+                description: document.getElementById('questionInput').value.replace(/<\/?[^>]+(>|$)/g, "")
+                + "\n" + items.map(function (e, i) {
+                    return "(" + (i + 1) + ") " + e.text
+                }).join("\n")
             }
         }
-
-        /** 
-            function init() -> dont delete! used for initialization.
-        **/
         init();
-
-        /** 
-            For each input field in form get & set values from windows.data object.
-            Is used when user is editing this card.
-
-            for example:
-            document.getElementById('fillintext').value = window.data.fillintext;
-            document.getElementById('hintInput').value = window.data.questionContext;
-            document.getElementById('explanationInput').value = window.data.answerContext;
-
-        **/
+        
+        if (window.data.items.length !== 0) {
+          for (var i = 0; i < window.data.items.length; i++){
+            addMoreButton.parentNode.insertBefore(createAnswer(), addMoreButton);
+            document.getElementById('answer' + (i+1)).value = window.data.items[i].text;
+            document.getElementById('correct' + (i+1)).checked = window.data.items[i].isCorrect;
+          }
+        }
         document.getElementById('titleInput').value = window.data.title;
-
+        document.getElementById('questionInput').value = window.data.question;
+        document.getElementById('hintInput').value = window.data.questionContext;
+        document.getElementById('explanationInput').value = window.data.answerContext;
     </script>
-    <!-- EDIT Form logic -->
 </body>
 </html>
